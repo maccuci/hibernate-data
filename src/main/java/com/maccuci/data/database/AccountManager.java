@@ -6,10 +6,7 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
-import javax.persistence.Query;
+import javax.persistence.*;
 import java.io.File;
 import java.util.List;
 
@@ -26,13 +23,16 @@ public class AccountManager {
     public void create(String name, String lastname, String role, double salary) {
         Account account = new Account(name, lastname, role, salary);
 
-        entityManager.getTransaction().begin();
         try {
+            entityManager.getTransaction().begin();
             entityManager.persist(account);
             entityManager.getTransaction().commit();
             System.out.println("Sucesso ao criar uma conta!");
         } catch (Exception e) {
+            entityManager.getTransaction().rollback();
             System.out.printf("Erro ao criar uma conta %s", e.getMessage());
+        } finally {
+            entityManager.close();
         }
     }
 
@@ -47,6 +47,46 @@ public class AccountManager {
         return account;
     }
 
+    public void edit(int id, String parameter, Object obj) {
+        Account account = find(id);
+
+        if (account == null) return;
+
+        switch (parameter) {
+            case "name":
+                String name = String.valueOf(obj);
+                if (name != null && !name.isEmpty()) {
+                    account.setName(name);
+                }
+                break;
+            case "lastname":
+                String lastname = String.valueOf(obj);
+                if (lastname != null && !lastname.isEmpty()) {
+                    account.setLastName(lastname);
+                }
+            case "role":
+                String role = String.valueOf(obj);
+                if (role != null && !role.isEmpty()) {
+                    account.setRole(role);
+                }
+                break;
+            case "salary":
+                double salary = Double.parseDouble(obj.toString());
+                if (salary != 0.0) {
+                    account.setSalary(salary);
+                }
+                break;
+        }
+        try {
+            entityManager.getTransaction().begin();
+            entityManager.merge(account);
+            entityManager.getTransaction().commit();
+            System.out.println("Sucesso ao editar a conta!");
+        } catch (Exception e) {
+            System.out.printf("Erro ao editar uma conta %s", e.getMessage());
+        }
+    }
+
     public void delete(int id) {
         Account account = find(id);
 
@@ -56,21 +96,21 @@ public class AccountManager {
         try {
             entityManager.remove(account);
             entityManager.getTransaction().commit();
-            System.out.println("Sucesso ao remover uma conta!");
+            System.out.println("Conta removida com sucesso!");
         } catch (Exception e) {
-            System.out.printf("Erro ao remover uma conta %s", e.getMessage());
+            System.out.printf("Erro ao remover conta: %s", e.getMessage());
+            entityManager.getTransaction().rollback();
+        } finally {
+            entityManager.close();
         }
     }
 
     public void list() {
         try {
-            Query query = entityManager.createQuery("from Account");
+            TypedQuery<Account> query = entityManager.createQuery("from Account", Account.class);
             List<Account> accounts = query.getResultList();
 
-            for (Account account : accounts) {
-                System.out.printf("ID: %d\nNome: %s\nSobrenome: %s\nCargo: %s\nSalário: %f\n", account.getId(), account.getName(), account.getLastName(), account.getRole(), account.getSalary());
-            }
-            entityManager.close();
+            accounts.forEach(this::display);
         } catch (Exception e) {
             e.printStackTrace();
         }

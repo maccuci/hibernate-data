@@ -1,12 +1,14 @@
 package com.maccuci.data.database.account;
 
 import lombok.Getter;
+import lombok.Setter;
 
 import javax.persistence.*;
 
 @Entity
 @Table(name = "Account")
 @Getter
+@Setter
 public class Account {
 
     @Id
