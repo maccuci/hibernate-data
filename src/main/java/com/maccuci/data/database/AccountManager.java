@@ -2,12 +2,8 @@ package com.maccuci.data.database;
 
 import com.maccuci.data.database.account.Account;
 import lombok.Getter;
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import org.hibernate.cfg.Configuration;
 
 import javax.persistence.*;
-import java.io.File;
 import java.util.List;
 
 @Getter
@@ -37,15 +33,12 @@ public class AccountManager {
     }
 
     public Account find(Object obj) {
-        Account account = null;
-        try {
-            account = entityManager.find(Account.class, obj);
-        } catch (Exception e) {
-            System.out.println("Erro ao procurar conta:");
-            e.printStackTrace();
+        if (obj == null) {
+            return null;
         }
-        return account;
+        return entityManager.find(Account.class, obj);
     }
+
 
     public void edit(int id, String parameter, Object obj) {
         Account account = find(id);
@@ -76,6 +69,8 @@ public class AccountManager {
                     account.setSalary(salary);
                 }
                 break;
+            default:
+                throw new IllegalArgumentException("Parâmetro inválido");
         }
         try {
             entityManager.getTransaction().begin();
